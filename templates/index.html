@@ -1,0 +1,289 @@
+<!doctype html>
+<html lang="sv">
+<head>
+    <meta charset="utf-8">
+    <title>OpenPrintTag Filament Search</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 30px;
+            background: #f7f7f7;
+            color: #111;
+        }
+
+        .topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 20px;
+        }
+
+        .logo {
+            height: 250px;
+            width: auto;
+        }
+
+        h1 {
+            font-size: 32px;
+            margin-bottom: 28px;
+        }
+
+        form {
+            background: white;
+            padding: 24px;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            margin-bottom: 32px;
+
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr 1fr auto;
+            gap: 20px;
+            align-items: end;
+        }
+
+        .field {
+            display: flex;
+            flex-direction: column;
+        }
+
+        label {
+            font-weight: bold;
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
+
+        input {
+            padding: 14px 16px;
+            font-size: 18px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+        }
+
+        button {
+            padding: 15px 32px;
+            font-size: 18px;
+            font-weight: bold;
+            border: none;
+            border-radius: 6px;
+            background: #0b72f0;
+            color: white;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #075dcc;
+        }
+
+        h2 {
+            font-size: 26px;
+            margin: 30px 0 24px 0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        th, td {
+            padding: 18px 22px;
+            border-bottom: 1px solid #e0e0e0;
+            border-right: 1px solid #e0e0e0;
+            vertical-align: middle;
+            font-size: 18px;
+        }
+
+        th {
+            background: #f3f3f3;
+            text-align: left;
+            font-weight: bold;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        th:last-child,
+        td:last-child {
+            border-right: none;
+        }
+
+        .color-cell {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .color-box {
+            width: 38px;
+            height: 38px;
+            border-radius: 4px;
+            border: 1px solid #aaa;
+            display: inline-block;
+        }
+
+        img {
+            max-width: 90px;
+            max-height: 90px;
+        }
+
+        a {
+            color: #0066dd;
+            font-weight: 500;
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        .no-results {
+            font-size: 20px;
+            margin-top: 30px;
+        }
+    </style>
+</head>
+
+<body>
+<div class="topbar">
+    <div>
+        <h1>
+            <a href="https://github.com/gertlind/OpenPrintTagDatabase-Color-Search"
+               target="_blank"
+               style="text-decoration: none; color: inherit;">
+                OpenPrintTagDatabase
+            </a>
+            Filament Search
+        </h1>
+        <p style="margin-top: -10px; color: #555; font-size: 18px;">
+            {{ stats.brands }} brands •
+            {{ stats.materials }} materials •
+            {{ stats.filaments }} filaments
+        </p>
+    </div>
+    <a href="https://github.com/gertlind/OpenPrintTagDatabase-Color-Search"
+       target="_blank">
+        <img src="{{ url_for('static', filename='images/opt.svg') }}"
+             class="logo">
+    </a>
+</div>
+
+<form method="get">
+
+    <div class="field">
+        <label>Manufacturer</label>
+        <input type="text"
+               name="manufacturer"
+               value="{{ manufacturer }}">
+    </div>
+
+    <div class="field">
+        <label>Material</label>
+        <input type="text"
+               name="material"
+               value="{{ material }}">
+    </div>
+
+    <div class="field">
+        <label>Name / Color name</label>
+        <input type="text"
+               name="name"
+               value="{{ name }}">
+    </div>
+
+    <div class="field">
+        <label>HEX Color</label>
+        <input type="text"
+               name="color"
+               value="{{ color }}">
+    </div>
+
+    <button type="submit">Search</button>
+
+</form>
+
+{% if results %}
+
+<h2>Hitsr: {{ results|length }}</h2>
+
+<table>
+
+    <thead>
+        <tr>
+            <th>Brand</th>
+            <th>Name</th>
+            <th>Color</th>
+            <th>Photo</th>
+            <th>Url</th>
+            <th>Properties</th>
+        </tr>
+    </thead>
+
+    <tbody>
+
+    {% for r in results %}
+
+    <tr>
+
+        <td>{{ r.brand }}</td>
+
+        <td>{{ r.name }}</td>
+
+        <td>
+            {% if r.color %}
+                <div class="color-cell">
+                    <span class="color-box"
+                          style="background-color: {{ r.color[:7] }}">
+                    </span>
+
+                    <span>{{ r.color }}</span>
+                </div>
+            {% endif %}
+        </td>
+
+        <td>
+            {% if r.photo %}
+                <a href="{{ r.photo }}" target="_blank">
+                    <img src="{{ r.photo }}" alt="Photo">
+                </a>
+            {% endif %}
+        </td>
+
+        <td>
+            {% if r.url %}
+                <a href="{{ r.url }}" target="_blank">
+                    Link ↗
+                </a>
+            {% endif %}
+        </td>
+
+        <td>
+            {% if r.has_properties %}
+                <a href="{{ url_for('properties_page', filament_id=r.id, return_query=request.query_string.decode()) }}">
+                    Properties
+                </a>
+
+</a>
+            {% endif %}
+        </td>
+
+    </tr>
+
+    {% endfor %}
+
+    </tbody>
+
+</table>
+
+{% elif manufacturer or material or name or color %}
+
+<p class="no-results">Inga träffar.</p>
+
+{% endif %}
+
+</body>
+</html>
