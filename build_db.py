@@ -3,11 +3,31 @@ from pathlib import Path
 import yaml
 import json
 
-# Folder där OpenPrintTag-databasen ligger
 DB_SOURCE = Path("openprinttag-database/data/materials")
+BRANDS_SOURCE = Path("openprinttag-database/data/brands")
 
-# SQLite-fil
 SQLITE_DB = "optd.db"
+
+
+def load_brand_countries():
+    countries = {}
+
+    for file in BRANDS_SOURCE.glob("*.yaml"):
+        with open(file, "r", encoding="utf-8") as f:
+            item = yaml.safe_load(f)
+
+        if not isinstance(item, dict):
+            continue
+
+        slug = item.get("slug", file.stem)
+        country_list = item.get("countries_of_origin", [])
+
+        if isinstance(country_list, list):
+            countries[slug] = ",".join(country_list)
+        else:
+            countries[slug] = str(country_list)
+
+    return countries
 
 
 def normalize_hex(value):
@@ -25,14 +45,15 @@ def normalize_hex(value):
     return value
 
 
-def get_brand(item):
-    brand = ""
-
+def get_brand_slug(item):
     if isinstance(item.get("brand"), dict):
-        brand = item["brand"].get("slug", "")
+        return item["brand"].get("slug", "")
 
-    if not brand:
-        brand = item.get("brand", "")
+    return str(item.get("brand", "")).strip()
+
+
+def get_brand(item):
+    brand = get_brand_slug(item)
 
     if isinstance(brand, str):
         brand = brand.replace("-", " ").title()
@@ -82,7 +103,6 @@ def get_photo(item):
 
 
 def get_url(item):
-
     for key in [
         "url",
         "website",
@@ -110,17 +130,18 @@ def get_url(item):
 
 print("Creating SQLite database...")
 
+brand_countries = load_brand_countries()
+
 conn = sqlite3.connect(SQLITE_DB)
 cursor = conn.cursor()
 
-# Ta bort gammal tabell
 cursor.execute("DROP TABLE IF EXISTS filaments")
 
-# Skapa tabell
 cursor.execute("""
 CREATE TABLE filaments (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     brand TEXT,
+    country TEXT,
     material TEXT,
     name TEXT,
     color TEXT,
@@ -133,11 +154,9 @@ CREATE TABLE filaments (
 """)
 
 count = 0
-
 files = list(DB_SOURCE.rglob("*.yaml"))
 
 for file in files:
-
     try:
         with open(file, "r", encoding="utf-8") as f:
             item = yaml.safe_load(f)
@@ -145,18 +164,21 @@ for file in files:
         if not isinstance(item, dict):
             continue
 
+        brand_slug = get_brand_slug(item)
         brand = get_brand(item)
+        country = brand_countries.get(brand_slug, "")
+
         material = get_material(item)
         name = get_name(item)
         color = get_color_hex(item)
         photo = get_photo(item)
         url = get_url(item)
-
         properties = item.get("properties", {})
 
         cursor.execute("""
         INSERT INTO filaments (
             brand,
+            country,
             material,
             name,
             color,
@@ -166,9 +188,10 @@ for file in files:
             properties_json,
             has_properties
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             brand,
+            country,
             material,
             name,
             color,
@@ -190,27 +213,16 @@ for file in files:
 
 conn.commit()
 
-# Index för snabb sökning
-cursor.execute(
-    "CREATE INDEX idx_brand ON filaments(brand)"
-)
-
-cursor.execute(
-    "CREATE INDEX idx_material ON filaments(material)"
-)
-
-cursor.execute(
-    "CREATE INDEX idx_name ON filaments(name)"
-)
-
-cursor.execute(
-    "CREATE INDEX idx_color ON filaments(color)"
-)
+cursor.execute("CREATE INDEX idx_brand ON filaments(brand)")
+cursor.execute("CREATE INDEX idx_country ON filaments(country)")
+cursor.execute("CREATE INDEX idx_material ON filaments(material)")
+cursor.execute("CREATE INDEX idx_name ON filaments(name)")
+cursor.execute("CREATE INDEX idx_color ON filaments(color)")
 
 conn.commit()
 conn.close()
 
 print()
-print(f"Done.")
+print("Done.")
 print(f"Imported {count} filaments.")
 print(f"SQLite database: {SQLITE_DB}")

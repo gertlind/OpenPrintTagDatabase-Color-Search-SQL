@@ -52,7 +52,13 @@ def get_database_stats():
     }
 
 
-def search_filaments(manufacturer="", material="", name="", color=""):
+def search_filaments(
+    manufacturer="",
+    country="",
+    material="",
+    name="",
+    color=""
+):
     query = """
         SELECT *
         FROM filaments
@@ -64,6 +70,10 @@ def search_filaments(manufacturer="", material="", name="", color=""):
     if manufacturer:
         query += " AND brand LIKE ?"
         params.append(f"%{manufacturer}%")
+
+    if country:
+        query += " AND country LIKE ?"
+        params.append(f"%{country.upper()}%")
 
     if material:
         query += " AND material LIKE ?"
@@ -92,15 +102,17 @@ def search_filaments(manufacturer="", material="", name="", color=""):
 @app.route("/", methods=["GET"])
 def index():
     manufacturer = request.args.get("manufacturer", "").strip()
+    country = request.args.get("country", "").strip()
     material = request.args.get("material", "").strip()
     name = request.args.get("name", "").strip()
     color = request.args.get("color", "").strip()
 
     results = []
 
-    if manufacturer or material or name or color:
+    if manufacturer or country or material or name or color:
         results = search_filaments(
             manufacturer=manufacturer,
+            country=country,
             material=material,
             name=name,
             color=color
@@ -112,6 +124,7 @@ def index():
         "index.html",
         results=results,
         manufacturer=manufacturer,
+        country=country,
         material=material,
         name=name,
         color=color,
@@ -122,6 +135,7 @@ def index():
 @app.route("/properties/<int:filament_id>")
 def properties_page(filament_id):
     return_query = request.args.get("return_query", "")
+
     conn = db_connect()
     cur = conn.cursor()
 

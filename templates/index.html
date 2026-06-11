@@ -37,7 +37,7 @@
             margin-bottom: 32px;
 
             display: grid;
-            grid-template-columns: 1fr 1fr 1fr 1fr auto;
+            grid-template-columns: 1fr 1fr 1fr 1fr 1fr auto;
             gap: 20px;
             align-items: end;
         }
@@ -182,6 +182,14 @@
     </div>
 
     <div class="field">
+        <label>Country</label>
+        <input type="text"
+               name="country"
+               placeholder="SE, US, CN..."
+               value="{{ country }}">
+    </div>
+
+    <div class="field">
         <label>Material</label>
         <input type="text"
                name="material"
@@ -215,6 +223,7 @@
     <thead>
         <tr>
             <th>Brand</th>
+            <th>Country</th>
             <th>Name</th>
             <th>Color</th>
             <th>Photo</th>
@@ -230,6 +239,8 @@
     <tr>
 
         <td>{{ r.brand }}</td>
+
+        <td>{{ r.country }}</td>
 
         <td>{{ r.name }}</td>
 
@@ -266,8 +277,6 @@
                 <a href="{{ url_for('properties_page', filament_id=r.id, return_query=request.query_string.decode()) }}">
                     Properties
                 </a>
-
-</a>
             {% endif %}
         </td>
 
@@ -279,7 +288,7 @@
 
 </table>
 
-{% elif manufacturer or material or name or color %}
+{% elif manufacturer or country or material or name or color %}
 
 <p class="no-results">Inga träffar.</p>
 
